@@ -15,9 +15,14 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
     try {
-        const { search, department, page = 1, limit = 10 } = req.query;
-        const currentPage = Math.max(1, +page);
-        const limitPage = Math.max(1, +limit);
+        const { search, department, page = "1", limit = "10" } = req.query;
+        const parsePositiveInt = (value: unknown, fallback: number) => {
+            if (typeof value !== "string") return fallback;
+            const n = Number.parseInt(value, 10);
+            return Number.isFinite(n) && n > 0 ? n : fallback;
+        };
+        const currentPage = parsePositiveInt(page, 1);
+        const limitPage = Math.min(100, parsePositiveInt(limit, 10));
         const offset = (currentPage - 1) * limitPage;
 
         const filterConditions = [];
@@ -34,10 +39,8 @@ router.get("/", async (req, res) => {
 
         // If department filter exists, add it to the conditions
         if (department) {
-            filterConditions.push(
-                ilike(departments.name, `%${department}%`)
-            )
-
+            const deptPattern = `%${String(department).replace(/[%_]/g, "\\$&")}%`;
+            filterConditions.push(ilike(departments.name, deptPattern));
         }
 
         // Combine all filters using AND if any exist
