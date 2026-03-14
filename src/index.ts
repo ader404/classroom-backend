@@ -1,49 +1,33 @@
-import { eq } from 'drizzle-orm';
-import { db } from './db';
-import { departments } from './db/schema';
+import express from "express";
+import cors from "cors";
+import subjectRoutes from "./routes/subjects";
 
-async function main() {
-    try {
-        console.log('Performing CRUD operations for Departments...');
 
-        // CREATE: Insert a new department
-        const [newDept] = await db
-            .insert(departments)
-            .values({ code: 'CS101', name: 'Computer Science', description: 'CS Department' })
-            .returning();
+const app = express();
+const PORT = 8000;
 
-        if (!newDept) {
-            throw new Error('Failed to create department');
-        }
 
-        console.log('✅ CREATE: New department created:', newDept);
-
-        // READ: Select the department
-        const foundDept = await db.select().from(departments).where(eq(departments.id, newDept.id));
-        console.log('✅ READ: Found department:', foundDept[0]);
-
-        // UPDATE: Change the department's name
-        const [updatedDept] = await db
-            .update(departments)
-            .set({ name: 'Computer Science & Engineering' })
-            .where(eq(departments.id, newDept.id))
-            .returning();
-
-        if (!updatedDept) {
-            throw new Error('Failed to update department');
-        }
-
-        console.log('✅ UPDATE: Department updated:', updatedDept);
-
-        // DELETE: Remove the department
-        await db.delete(departments).where(eq(departments.id, newDept.id));
-        console.log('✅ DELETE: Department deleted.');
-
-        console.log('\nCRUD operations completed successfully.');
-    } catch (error) {
-        console.error('❌ Error performing CRUD operations:', error);
-        process.exit(1);
-    }
+if (!process.env.FRONTEND_URL) {
+    throw new Error("FRONTEND_URL is not defined");
 }
 
-main();
+
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+
+}));
+
+app.use(express.json());
+
+app.use('/api/subjects', subjectRoutes);
+
+app.get("/", (req, res) => {
+    res.send("Hello welcom to the classroom API!");
+});
+
+app.listen(PORT, () => {
+    console.log(`Server started running on port ${PORT}`);
+});
