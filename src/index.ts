@@ -1,6 +1,8 @@
-import express from "express";
+import 'dotenv/config';
+import express, { Request, Response } from "express";
 import cors from "cors";
 import subjectRoutes from "./routes/subjects";
+import securityMiddleware from "./middleware/security";
 
 
 const app = express();
@@ -21,10 +23,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use('/api', securityMiddleware);
 
 app.use('/api/subjects', subjectRoutes);
 
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response) => {
     res.send("Hello welcom to the classroom API!");
 });
 

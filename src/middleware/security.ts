@@ -26,6 +26,9 @@ const securityMiddleware = async (
         message = "Admin request limit exceeded (20 per minute). Slow down!";
         break;
       case "teacher":
+        limit = 20;
+        message = "User request limit exceeded (10 per minute). Please wait.";
+        break;
       case "student":
         limit = 10;
         message = "User request limit exceeded (10 per minute). Please wait.";
@@ -56,28 +59,35 @@ const securityMiddleware = async (
 
     const decision = await client.protect(arcjetRequest);
 
-    if (decision.isDenied() && decision.reason.isBot()) {
-      return res.status(403).json({
-        error: "Forbidden",
-        message: "Automated requests are not allowed",
-      });
-    }
+    if (decision.isDenied()) {
+      if (decision.reason.isBot()) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "Automated requests are not allowed",
+        });
+      }
 
-    if (decision.isDenied() && decision.reason.isShield()) {
+      if (decision.reason.isShield()) {
+        return res.status(403).json({
+          error: "Forbidden",
+          message: "Request blocked by security policy",
+        });
+      }
+
+      if (decision.reason.isRateLimit()) {
+        return res.status(429).json({
+          error: "Too Many Requests",
+          message,
+        });
+      }
+
       return res.status(403).json({
         error: "Forbidden",
         message: "Request blocked by security policy",
       });
     }
 
-    if (decision.isDenied() && decision.reason.isRateLimit()) {
-      return res.status(429).json({
-        error: "Too Many Requests",
-        message,
-      });
-    }
-
-    next();
+    return next();
   } catch (error) {
     console.error("Arcjet middleware error:", error);
     res.status(500).json({
