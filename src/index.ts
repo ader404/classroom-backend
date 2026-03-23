@@ -3,6 +3,8 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import subjectRoutes from "./routes/subjects";
 import securityMiddleware from "./middleware/security";
+import userRoutes from "./routes/users";
+import classRoutes from "./routes/classes";
 
 
 const app = express();
@@ -26,6 +28,9 @@ app.use(express.json());
 app.use('/api', securityMiddleware);
 
 app.use('/api/subjects', subjectRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/classes', classRoutes);
+
 
 app.get("/", (req: Request, res: Response) => {
     res.send("Hello welcom to the classroom API!");
