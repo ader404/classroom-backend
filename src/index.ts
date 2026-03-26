@@ -4,7 +4,7 @@ import('apminsight')
 
 import cors from "cors";
 import express from "express";
-import { toNodeHandler } from "better-auth/node";
+// import { toNodeHandler } from "better-auth/node";
 
 import subjectsRouter from "./routes/subjects.js";
 import usersRouter from "./routes/users.js";
