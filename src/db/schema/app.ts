@@ -41,21 +41,25 @@ export const departments = pgTable("departments", {
   ...timestamps,
 });
 
-export const subjects = pgTable("subjects", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+export const subjects = pgTable(
+  "subjects",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
-  departmentId: integer("department_id")
-    .notNull()
-    .references(() => departments.id, { onDelete: "restrict" }),
+    departmentId: integer("department_id")
+      .notNull()
+      .references(() => departments.id, { onDelete: "restrict" }),
 
-  name: varchar("name", { length: 255 }).notNull(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  description: text("description"),
+    name: varchar("name", { length: 255 }).notNull(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    description: text("description"),
 
-  ...timestamps,
-}, (table) => ({
-  departmentIdIdx: index("subjects_department_id_idx").on(table.departmentId),
-}));
+    ...timestamps,
+  },
+  (table) => ({
+    departmentIdIdx: index("subjects_department_id_idx").on(table.departmentId),
+  }),
+);
 
 export const classes = pgTable(
   "classes",
@@ -83,7 +87,7 @@ export const classes = pgTable(
   (table) => ({
     subjectIdIdx: index("classes_subject_id_idx").on(table.subjectId),
     teacherIdIdx: index("classes_teacher_id_idx").on(table.teacherId),
-  })
+  }),
 );
 
 export const enrollments = pgTable(
@@ -105,9 +109,9 @@ export const enrollments = pgTable(
     classIdIdx: index("enrollments_class_id_idx").on(table.classId),
     studentClassUnique: uniqueIndex("enrollments_student_class_unique").on(
       table.studentId,
-      table.classId
+      table.classId,
     ),
-  })
+  }),
 );
 
 export const departmentsRelations = relations(departments, ({ many }) => ({
