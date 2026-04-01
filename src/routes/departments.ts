@@ -9,6 +9,7 @@ import {
   subjects,
   user,
 } from "../db/schema/index.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireRole("admin"), async (req, res) => {
   try {
     const { code, name, description } = req.body;
 
@@ -85,6 +86,96 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("POST /departments error:", error);
     res.status(500).json({ error: "Failed to create department" });
+  }
+});
+
+router.put("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const departmentId = Number(req.params.id);
+
+    if (!Number.isFinite(departmentId)) {
+      return res.status(400).json({ error: "Invalid department id" });
+    }
+
+    const { code, name, description } = req.body;
+
+    const updateData = {
+      code,
+      name,
+      description,
+    };
+
+    const [updatedDepartment] = await db
+      .update(departments)
+      .set(updateData)
+      .where(eq(departments.id, departmentId))
+      .returning({ id: departments.id });
+
+    if (!updatedDepartment) {
+      return res.status(404).json({ error: "Department not found" });
+    }
+
+    res.status(200).json({ data: updatedDepartment });
+  } catch (error) {
+    console.error("PUT /departments/:id error:", error);
+    res.status(500).json({ error: "Failed to update department" });
+  }
+});
+
+router.patch("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const departmentId = Number(req.params.id);
+
+    if (!Number.isFinite(departmentId)) {
+      return res.status(400).json({ error: "Invalid department id" });
+    }
+
+    const { code, name, description } = req.body;
+
+    const updateData = {
+      code,
+      name,
+      description,
+    };
+
+    const [updatedDepartment] = await db
+      .update(departments)
+      .set(updateData)
+      .where(eq(departments.id, departmentId))
+      .returning({ id: departments.id });
+
+    if (!updatedDepartment) {
+      return res.status(404).json({ error: "Department not found" });
+    }
+
+    res.status(200).json({ data: updatedDepartment });
+  } catch (error) {
+    console.error("PATCH /departments/:id error:", error);
+    res.status(500).json({ error: "Failed to update department" });
+  }
+});
+
+router.delete("/:id", requireRole("admin"), async (req, res) => {
+  try {
+    const departmentId = Number(req.params.id);
+
+    if (!Number.isFinite(departmentId)) {
+      return res.status(400).json({ error: "Invalid department id" });
+    }
+
+    const [deletedDepartment] = await db
+      .delete(departments)
+      .where(eq(departments.id, departmentId))
+      .returning({ id: departments.id });
+
+    if (!deletedDepartment) {
+      return res.status(404).json({ error: "Department not found" });
+    }
+
+    res.status(200).json({ data: deletedDepartment });
+  } catch (error) {
+    console.error("DELETE /departments/:id error:", error);
+    res.status(409).json({ error: "Failed to delete department" });
   }
 });
 

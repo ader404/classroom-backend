@@ -3,6 +3,7 @@ import { and, desc, eq, getTableColumns, ilike, or, sql } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import { classes, departments, enrollments, subjects, user } from "../db/schema/index.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -79,7 +80,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireRole("admin", "teacher"), async (req, res) => {
   try {
     const {
       name,
@@ -114,6 +115,134 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("POST /classes error:", error);
     res.status(500).json({ error: "Failed to create class" });
+  }
+});
+
+router.put("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const classId = Number(req.params.id);
+
+    if (!Number.isFinite(classId)) {
+      return res.status(400).json({ error: "Invalid class id" });
+    }
+
+    const {
+      name,
+      teacherId,
+      subjectId,
+      capacity,
+      description,
+      status,
+      bannerUrl,
+      bannerCldPubId,
+      schedules,
+    } = req.body;
+
+    const updateData: Partial<typeof classes.$inferInsert> = {
+      name,
+      teacherId,
+      subjectId,
+      capacity,
+      description,
+      status,
+      bannerUrl,
+      bannerCldPubId,
+    };
+
+    if (Array.isArray(schedules)) {
+      updateData.schedules = schedules;
+    }
+
+    const [updatedClass] = await db
+      .update(classes)
+      .set(updateData)
+      .where(eq(classes.id, classId))
+      .returning({ id: classes.id });
+
+    if (!updatedClass) {
+      return res.status(404).json({ error: "Class not found" });
+    }
+
+    res.status(200).json({ data: updatedClass });
+  } catch (error) {
+    console.error("PUT /classes/:id error:", error);
+    res.status(500).json({ error: "Failed to update class" });
+  }
+});
+
+router.patch("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const classId = Number(req.params.id);
+
+    if (!Number.isFinite(classId)) {
+      return res.status(400).json({ error: "Invalid class id" });
+    }
+
+    const {
+      name,
+      teacherId,
+      subjectId,
+      capacity,
+      description,
+      status,
+      bannerUrl,
+      bannerCldPubId,
+      schedules,
+    } = req.body;
+
+    const updateData: Partial<typeof classes.$inferInsert> = {
+      name,
+      teacherId,
+      subjectId,
+      capacity,
+      description,
+      status,
+      bannerUrl,
+      bannerCldPubId,
+    };
+
+    if (Array.isArray(schedules)) {
+      updateData.schedules = schedules;
+    }
+
+    const [updatedClass] = await db
+      .update(classes)
+      .set(updateData)
+      .where(eq(classes.id, classId))
+      .returning({ id: classes.id });
+
+    if (!updatedClass) {
+      return res.status(404).json({ error: "Class not found" });
+    }
+
+    res.status(200).json({ data: updatedClass });
+  } catch (error) {
+    console.error("PATCH /classes/:id error:", error);
+    res.status(500).json({ error: "Failed to update class" });
+  }
+});
+
+router.delete("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const classId = Number(req.params.id);
+
+    if (!Number.isFinite(classId)) {
+      return res.status(400).json({ error: "Invalid class id" });
+    }
+
+    const [deletedClass] = await db
+      .delete(classes)
+      .where(eq(classes.id, classId))
+      .returning({ id: classes.id });
+
+    if (!deletedClass) {
+      return res.status(404).json({ error: "Class not found" });
+    }
+
+    res.status(200).json({ data: deletedClass });
+  } catch (error) {
+    console.error("DELETE /classes/:id error:", error);
+    res.status(409).json({ error: "Failed to delete class" });
   }
 });
 

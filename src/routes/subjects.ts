@@ -3,6 +3,7 @@ import { eq, ilike, or, and, desc, sql, getTableColumns } from "drizzle-orm";
 
 import { db } from "../db/index.js";
 import { classes, departments, enrollments, subjects, user } from "../db/schema/index.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -72,7 +73,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", requireRole("admin", "teacher"), async (req, res) => {
   try {
     const { departmentId, name, code, description } = req.body;
 
@@ -87,6 +88,98 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("POST /subjects error:", error);
     res.status(500).json({ error: "Failed to create subject" });
+  }
+});
+
+router.put("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const subjectId = Number(req.params.id);
+
+    if (!Number.isFinite(subjectId)) {
+      return res.status(400).json({ error: "Invalid subject id" });
+    }
+
+    const { departmentId, name, code, description } = req.body;
+
+    const updateData = {
+      departmentId,
+      name,
+      code,
+      description,
+    };
+
+    const [updatedSubject] = await db
+      .update(subjects)
+      .set(updateData)
+      .where(eq(subjects.id, subjectId))
+      .returning({ id: subjects.id });
+
+    if (!updatedSubject) {
+      return res.status(404).json({ error: "Subject not found" });
+    }
+
+    res.status(200).json({ data: updatedSubject });
+  } catch (error) {
+    console.error("PUT /subjects/:id error:", error);
+    res.status(500).json({ error: "Failed to update subject" });
+  }
+});
+
+router.patch("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const subjectId = Number(req.params.id);
+
+    if (!Number.isFinite(subjectId)) {
+      return res.status(400).json({ error: "Invalid subject id" });
+    }
+
+    const { departmentId, name, code, description } = req.body;
+
+    const updateData = {
+      departmentId,
+      name,
+      code,
+      description,
+    };
+
+    const [updatedSubject] = await db
+      .update(subjects)
+      .set(updateData)
+      .where(eq(subjects.id, subjectId))
+      .returning({ id: subjects.id });
+
+    if (!updatedSubject) {
+      return res.status(404).json({ error: "Subject not found" });
+    }
+
+    res.status(200).json({ data: updatedSubject });
+  } catch (error) {
+    console.error("PATCH /subjects/:id error:", error);
+    res.status(500).json({ error: "Failed to update subject" });
+  }
+});
+
+router.delete("/:id", requireRole("admin", "teacher"), async (req, res) => {
+  try {
+    const subjectId = Number(req.params.id);
+
+    if (!Number.isFinite(subjectId)) {
+      return res.status(400).json({ error: "Invalid subject id" });
+    }
+
+    const [deletedSubject] = await db
+      .delete(subjects)
+      .where(eq(subjects.id, subjectId))
+      .returning({ id: subjects.id });
+
+    if (!deletedSubject) {
+      return res.status(404).json({ error: "Subject not found" });
+    }
+
+    res.status(200).json({ data: deletedSubject });
+  } catch (error) {
+    console.error("DELETE /subjects/:id error:", error);
+    res.status(409).json({ error: "Failed to delete subject" });
   }
 });
 

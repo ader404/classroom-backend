@@ -60,6 +60,56 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Update the current user's profile
+router.patch("/me", async (req, res) => {
+  try {
+    const currentUser = req.user;
+
+    if (!currentUser?.id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const { name, image, imageCldPubId } = req.body;
+
+    const updateData: {
+      name?: string;
+      image?: string | null;
+      imageCldPubId?: string | null;
+    } = {};
+
+    if (typeof name === "string" && name.trim().length >= 2) {
+      updateData.name = name.trim();
+    }
+
+    if (image === null || typeof image === "string") {
+      updateData.image = image;
+    }
+
+    if (imageCldPubId === null || typeof imageCldPubId === "string") {
+      updateData.imageCldPubId = imageCldPubId;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: "No valid fields to update" });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set(updateData)
+      .where(eq(user.id, currentUser.id))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ data: updatedUser });
+  } catch (error) {
+    console.error("PATCH /users/me error:", error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
 // Get user details with role-specific data
 router.get("/:id", async (req, res) => {
   try {

@@ -2,10 +2,11 @@ import arcjet, { shield, detectBot } from "@arcjet/node";
 
 const isTestEnv = process.env.NODE_ENV === "test";
 const arcjetKey = process.env.ARCJET_KEY;
+export const isArcjetEnabled = Boolean(arcjetKey);
 
 if (!arcjetKey && !isTestEnv) {
-  throw new Error(
-    "ARCJET_KEY environment variable is required. Sign up for your Arcjet key at https://app.arcjet.com"
+  console.warn(
+    "ARCJET_KEY is not set. Arcjet protection is disabled for this environment."
   );
 }
 
